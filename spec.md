@@ -1,0 +1,1 @@
+a sessao de dono, acessa todos os caminhos linkaveis, e tem controle de todas as funcionalidades do site da barbearia, tendo em vista, apenas criarem mais um gancho na sessao do dono, para gerenciar os funcionarios, como os barbeiro, ele pode criar o a conta dos barbeiros, onde iremos criar a sessao de funcionarios 

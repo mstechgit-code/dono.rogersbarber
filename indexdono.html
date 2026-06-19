@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dono Barbearia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Pular para o conteudo</a>
+
+  <header class="site-header">
+    <div class="container header-row">
+      <a href="index.html" class="logo" aria-label="Pagina inicial do Dono Barbearia">
+        <div>
+          <p class="eyebrow">Dono Barbearia</p>
+          <h1 class="brand">Painel local</h1>
+        </div>
+      </a>
+      <nav class="main-nav" role="navigation" aria-label="Menu principal">
+        <ul>
+          <li><a href="index.html">Inicio</a></li>
+          <li><a href="admin.html">Admin</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="container">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-intro">
+        <p class="eyebrow">Area do dono</p>
+        <h2 id="hero-title">Painel independente para gerenciar agendamentos</h2>
+        <p class="lead">Acesse o dashboard local, veja os agendamentos salvos no navegador e use as funcoes de filtro, edicao, backup e exportacao.</p>
+        <div class="hero-actions">
+          <a class="cta" href="admin.html">Abrir admin</a>
+          <a class="btn" href="barbeiro.html">Portal do barbeiro</a>
+          <a class="btn" href="#details">Ver detalhes</a>
+        </div>
+      </div>
+      <aside class="hero-card" aria-label="Resumo do painel">
+        <div class="hero-score">Local<span>✓</span></div>
+        <p class="muted">Sem dependencia dos arquivos da raiz</p>
+        <div class="info-chip open">Senha de acesso: 1234</div>
+        <p class="info-line">Dados salvos em localStorage</p>
+        <p class="info-line">Login por modal interno</p>
+      </aside>
+    </section>
+
+    <section class="section-summary" id="details">
+      <article class="summary-block">
+        <h3>Dashboard</h3>
+        <p>Indicadores de hoje, semana, receita, duracao e status.</p>
+      </article>
+      <article class="summary-block">
+        <h3>Agendamentos</h3>
+        <p>Busca, filtros, ordenacao, paginação e acoes em lote.</p>
+      </article>
+      <article class="summary-block">
+        <h3>Backup</h3>
+        <p>Exportacao CSV, backup JSON e restauracao local.</p>
+      </article>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; Dono Barbearia - ambiente local</p>
+    </div>
+  </footer>
+</body>
+</html>

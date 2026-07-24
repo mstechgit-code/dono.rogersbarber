@@ -23,7 +23,7 @@
   function qs(sel){return document.querySelector(sel)}
   function qsa(sel){return document.querySelectorAll(sel)}
 
-  // AUTH
+  // AUTH - LOGIN ÚNICO PARA ADMIN E BARBEIROS
   function initAuth(){
     const modal = qs('#auth-modal');
     const content = qs('#admin-content');
@@ -53,23 +53,32 @@
         return;
       }
 
-      // Verificar se é admin (senha padrão)
+      // ADMIN: login = "admin", password = "1234"
       if(login === 'admin' && password === ADMIN_PASSWORD){
         sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
-        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify({login: 'admin', name: 'Admin', role: 'admin'}));
+        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
+          login: 'admin', 
+          name: 'Administrador', 
+          role: 'admin'
+        }));
         if(loginInput) loginInput.value = '';
         if(passwordInput) passwordInput.value = '';
         showAdmin();
         return;
       }
 
-      // Verificar usuários cadastrados
+      // BARBEIROS: Verificar contra usuários cadastrados pelo admin
       const users = getBarberUsers();
       const user = users.find(u => u.login === login && u.password === password);
       
       if(user){
+        // Barbeiro encontrado - faz login
         sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
-        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify({login: user.login, name: user.name, role: user.role}));
+        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify({
+          login: user.login, 
+          name: user.name, 
+          role: 'barbeiro' // Sempre barbeiro, nunca admin
+        }));
         if(loginInput) loginInput.value = '';
         if(passwordInput) passwordInput.value = '';
         showAdmin();
@@ -106,7 +115,8 @@
     if(userStr){
       try{
         const user = JSON.parse(userStr);
-        userDisplay.textContent = `Usuário: ${user.name} (${user.role === 'admin' ? 'Admin' : 'Barbeiro'})`;
+        const roleText = user.role === 'admin' ? '(Administrador)' : '(Barbeiro)';
+        userDisplay.textContent = `Logado como: ${user.name} ${roleText}`;
       } catch(e){
         userDisplay.textContent = '';
       }
@@ -176,13 +186,13 @@
   }
   function saveBarberUsers(arr){
     try{
-      const result = localStorage.setItem('barberUsers',JSON.stringify(arr));
+      localStorage.setItem('barberUsers',JSON.stringify(arr));
       // Força sincronização
       localStorage.getItem('barberUsers');
-      console.log('Usuários salvos:', arr);
+      console.log('✅ Contas de barbeiro salvas:', arr);
       return true;
     }catch(e){
-      console.error('Erro ao salvar usuários:', e);
+      console.error('Erro ao salvar contas de barbeiro:', e);
       return false;
     }
   }
@@ -194,7 +204,7 @@
       appointmentName,
       details
     });
-    saveHistory(history.slice(-1000)); // Keep last 1000
+    saveHistory(history.slice(-1000));
   }
 
   function setUserStatus(message, type){
@@ -203,7 +213,6 @@
     status.textContent = message;
     status.className = `status ${type || ''}`.trim();
     
-    // Remove mensagem após 5 segundos
     if(type === 'success'){
       setTimeout(()=>{
         if(status.textContent === message) status.textContent = '';
@@ -245,12 +254,11 @@
     const mins = duration % 60;
     qs('#stat-duration').textContent = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
     
-    // Update badge
     qs('#pending-badge').textContent = pending.length;
   }
 
   function renderCharts(){
-    if(charts.revenue) return; // Already rendered
+    if(charts.revenue) return;
     
     const appts = getAppointments();
     const last7Days = [];
@@ -266,7 +274,6 @@
       if(service && revenueByDay[a.date] !== undefined) revenueByDay[a.date] += service.price || 0;
     });
     
-    // Revenue Chart
     const revenueCtx = qs('#revenue-chart')?.getContext('2d');
     if(revenueCtx){
       charts.revenue = new Chart(revenueCtx, {
@@ -286,7 +293,6 @@
       });
     }
     
-    // Services Chart
     const serviceCount = {};
     SERVICES.forEach(s=>serviceCount[s.name]=0);
     appts.forEach(a=>{
@@ -309,7 +315,6 @@
       });
     }
     
-    // Cancellation Chart
     const total = appts.length;
     const cancelledCount = appts.filter(a=>a.status==='cancelled').length;
     const cancellationCtx = qs('#cancellation-chart')?.getContext('2d');
@@ -351,7 +356,6 @@
     if(currentFilter.dateFrom) appts = appts.filter(a => a.date >= currentFilter.dateFrom);
     if(currentFilter.dateTo) appts = appts.filter(a => a.date <= currentFilter.dateTo);
     
-    // Sort
     appts.sort((a,b)=>{
       if(currentSort === 'date-asc') return a.date.localeCompare(b.date) || a.time.localeCompare(b.time);
       if(currentSort === 'date-desc') return b.date.localeCompare(a.date) || b.time.localeCompare(a.time);
@@ -443,7 +447,6 @@
       li.appendChild(actions);
       list.appendChild(li);
       
-      // Add checkbox listener
       li.querySelector('.appt-checkbox').addEventListener('change', (e)=>{
         if(e.target.checked) selectedAppointments.add(a.id);
         else selectedAppointments.delete(a.id);
@@ -677,7 +680,7 @@
     });
   }
 
-  // USERS
+  // GESTÃO DE BARBEIROS - SOMENTE ADMIN PODE CRIAR CONTAS
   function renderUsers(){
     const list = qs('#barber-users-list');
     const count = qs('#user-count');
@@ -691,7 +694,7 @@
     if(users.length === 0){
       const empty = document.createElement('li');
       empty.className = 'history-item';
-      empty.textContent = 'Nenhum usuario cadastrado.';
+      empty.textContent = 'Nenhuma conta de barbeiro cadastrada.';
       list.appendChild(empty);
       return;
     }
@@ -699,29 +702,28 @@
     users.slice().reverse().forEach((user)=>{
       const li = document.createElement('li');
       li.className = 'history-item user-card';
-      const roleLabel = user.role === 'admin' ? 'Admin' : 'Barbeiro';
       const maskedPassword = user.password ? '*'.repeat(Math.max(4, user.password.length)) : '****';
 
       li.innerHTML = `
         <div class="user-card-header">
           <div>
             <div class="history-action">${user.name}</div>
-            <div class="history-detail">@${user.login}</div>
+            <div class="history-detail">Login: @${user.login}</div>
           </div>
-          <div class="user-role">${roleLabel}</div>
         </div>
         <div class="user-card-meta">Senha: ${maskedPassword}</div>
+        <div class="user-card-meta"><small>Criado em: ${new Date(user.createdAt).toLocaleDateString('pt-BR')}</small></div>
         <div class="user-actions">
-          <button class="btn btn-danger" data-user-delete="${user.id}">Remover</button>
+          <button class="btn btn-danger" data-user-delete="${user.id}">Remover Conta</button>
         </div>
       `;
 
       list.appendChild(li);
       li.querySelector('[data-user-delete]')?.addEventListener('click', ()=>{
-        if(confirm(`Remover o usuario ${user.name}?`)){
+        if(confirm(`Remover conta do barbeiro "${user.name}"?`)){
           const updated = getBarberUsers().filter((item)=>item.id !== user.id);
           saveBarberUsers(updated);
-          setUserStatus('Usuario removido.', 'success');
+          setUserStatus('Conta de barbeiro removida.', 'success');
           renderUsers();
         }
       });
@@ -740,7 +742,6 @@
       const name = qs('#user-name')?.value.trim();
       const login = qs('#user-login')?.value.trim().toLowerCase();
       const password = qs('#user-password')?.value;
-      const role = qs('#user-role')?.value || 'barbeiro';
 
       // Validação
       if(!name || !login || !password){
@@ -753,50 +754,49 @@
         return;
       }
 
-      const users = getBarberUsers();
-      if(users.some((user)=>String(user.login || '').toLowerCase() === login)){
-        setUserStatus('Ja existe um usuario com esse login.', 'error');
+      if(login === 'admin'){
+        setUserStatus('Não é permitido usar "admin" como login.', 'error');
         return;
       }
 
-      // Criar novo usuário
+      const users = getBarberUsers();
+      if(users.some((user)=>String(user.login || '').toLowerCase() === login)){
+        setUserStatus('Ja existe um barbeiro com esse login.', 'error');
+        return;
+      }
+
+      // Criar nova conta de barbeiro
       const newUser = {
         id: Date.now(),
         name,
         login,
         password,
-        role,
         createdAt: new Date().toISOString()
       };
 
-      // Adicionar à lista
       users.push(newUser);
 
-      // Salvar
+      // Salvar conta
       const saved = saveBarberUsers(users);
       
       if(saved){
         // Limpar formulário
         form.reset();
-        const roleSelect = qs('#user-role');
-        if(roleSelect) roleSelect.value = 'barbeiro';
         
         // Mensagem de sucesso
-        setUserStatus(`✓ Usuario "${name}" criado com sucesso!`, 'success');
+        setUserStatus(`✅ Conta de barbeiro "${name}" criada! Login: ${login}`, 'success');
         
         // Renderizar lista atualizada
         renderUsers();
         
-        // Verificar dados salvos
-        console.log('Usuários após salvar:', getBarberUsers());
+        console.log('✅ Barbeiro cadastrado:', newUser);
         
-        // Limpar mensagem após 3 segundos
         setTimeout(()=>{
           const status = qs('#user-status');
           if(status) status.textContent = '';
-        }, 3000);
+        }, 5000);
       } else {
-        setUserStatus('Erro ao salvar usuário. Tente novamente.', 'error');
+        setUserStatus('Erro ao salvar conta. Tente novamente.', 'error');
       }
     });
   }
@@ -858,7 +858,6 @@
 
   // INIT
   document.addEventListener('DOMContentLoaded', ()=>{
-    // Set year
     qs('#year-admin').textContent = new Date().getFullYear();
     
     initAuth();
@@ -869,7 +868,6 @@
     initSettings();
     initUsers();
     
-    // Filters
     qs('#filter-apply')?.addEventListener('click', ()=>{
       currentFilter = {
         search: qs('#filter-search')?.value || '',
@@ -897,7 +895,6 @@
       renderAppointments();
     });
     
-    // Batch actions
     qs('#select-all-appts')?.addEventListener('change', (e)=>{
       qsa('.appt-checkbox').forEach(cb=>{
         cb.checked = e.target.checked;
@@ -913,7 +910,6 @@
       if(confirm('Deletar selecionados?')) batchAction('delete');
     });
     
-    // Timeline
     qs('#timeline-today')?.addEventListener('click', ()=>{
       qs('#timeline-date').value = new Date().toISOString().slice(0,10);
       renderTimeline();
@@ -921,11 +917,9 @@
     
     qs('#timeline-date')?.addEventListener('change', renderTimeline);
     
-    // History filters
     qs('#history-filter')?.addEventListener('change', renderHistory);
     qs('#history-date')?.addEventListener('change', renderHistory);
     
-    // Export
     qs('#filter-export')?.addEventListener('click', ()=>{
       const appts = getFilteredAndSorted();
       let csv = 'Nome,Telefone,Serviço,Data,Hora,Status\n';
@@ -941,7 +935,6 @@
       link.click();
     });
     
-    // Print
     qs('#filter-print')?.addEventListener('click', ()=>{
       const appts = getFilteredAndSorted();
       let html = '<h2>Relatório de Agendamentos</h2>';

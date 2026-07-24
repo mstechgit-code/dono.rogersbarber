@@ -104,15 +104,39 @@
   function getAppointments(){
     try{return JSON.parse(localStorage.getItem('appointments')||'[]')}catch(e){return[]}
   }
-  function saveAppointments(arr){localStorage.setItem('appointments',JSON.stringify(arr))}
+  function saveAppointments(arr){
+    try{
+      localStorage.setItem('appointments',JSON.stringify(arr));
+      return true;
+    }catch(e){
+      console.error('Erro ao salvar agendamentos:', e);
+      return false;
+    }
+  }
   function getHistory(){
     try{return JSON.parse(localStorage.getItem('history')||'[]')}catch(e){return[]}
   }
-  function saveHistory(arr){localStorage.setItem('history',JSON.stringify(arr))}
+  function saveHistory(arr){
+    try{
+      localStorage.setItem('history',JSON.stringify(arr));
+      return true;
+    }catch(e){
+      console.error('Erro ao salvar histórico:', e);
+      return false;
+    }
+  }
   function getBarberUsers(){
     try{return JSON.parse(localStorage.getItem('barberUsers')||'[]')}catch(e){return[]}
   }
-  function saveBarberUsers(arr){localStorage.setItem('barberUsers',JSON.stringify(arr))}
+  function saveBarberUsers(arr){
+    try{
+      localStorage.setItem('barberUsers',JSON.stringify(arr));
+      return true;
+    }catch(e){
+      console.error('Erro ao salvar usuários:', e);
+      return false;
+    }
+  }
   function addHistoryEntry(action, appointmentName, details){
     const history = getHistory();
     history.push({
@@ -129,6 +153,13 @@
     if(!status) return;
     status.textContent = message;
     status.className = `status ${type || ''}`.trim();
+    
+    // Remove mensagem após 5 segundos
+    if(type === 'success'){
+      setTimeout(()=>{
+        if(status.textContent === message) status.textContent = '';
+      }, 5000);
+    }
   }
 
   // DASHBOARD & CHARTS
@@ -662,8 +693,14 @@
       const password = qs('#user-password')?.value;
       const role = qs('#user-role')?.value || 'barbeiro';
 
+      // Validação
       if(!name || !login || !password){
         setUserStatus('Preencha nome, login e senha.', 'error');
+        return;
+      }
+
+      if(password.length < 4){
+        setUserStatus('Senha deve ter pelo menos 4 caracteres.', 'error');
         return;
       }
 
@@ -673,21 +710,42 @@
         return;
       }
 
-      users.push({
+      // Criar novo usuário
+      const newUser = {
         id: Date.now(),
         name,
         login,
         password,
         role,
         createdAt: new Date().toISOString()
-      });
+      };
 
-      saveBarberUsers(users);
-      form.reset();
-      const roleSelect = qs('#user-role');
-      if(roleSelect) roleSelect.value = 'barbeiro';
-      setUserStatus('Usuario criado com sucesso.', 'success');
-      renderUsers();
+      // Adicionar à lista
+      users.push(newUser);
+
+      // Salvar
+      const saved = saveBarberUsers(users);
+      
+      if(saved){
+        // Limpar formulário
+        form.reset();
+        const roleSelect = qs('#user-role');
+        if(roleSelect) roleSelect.value = 'barbeiro';
+        
+        // Mensagem de sucesso
+        setUserStatus(`✓ Usuario "${name}" criado com sucesso!`, 'success');
+        
+        // Renderizar lista atualizada
+        renderUsers();
+        
+        // Limpar mensagem após 3 segundos
+        setTimeout(()=>{
+          const status = qs('#user-status');
+          if(status) status.textContent = '';
+        }, 3000);
+      } else {
+        setUserStatus('Erro ao salvar usuário. Tente novamente.', 'error');
+      }
     });
   }
 
@@ -836,7 +894,7 @@
       const appts = getFilteredAndSorted();
       let html = '<h2>Relatório de Agendamentos</h2>';
       html += `<p>Data: ${new Date().toLocaleDateString('pt-BR')}</p>`;
-      html += '<table style="width:100%;border-collapse:collapse;"><tr style="border:1px solid #000;"><th style="border:1px solid #000;padding:8px;">Nome</th><th style="border:1px solid #000;padding:8px;">Tel</th><th style="border:1px solid #000;padding:8px;">Serviço</th><th style="border:1px solid #000;padding:8px;">Data</th><th style="border:1px solid #000;padding:8px;">Hora</th><th style="border:1px solid #000;padding:8px;">Status</th></tr>';
+      html += '<table style="width:100%;border-collapse:collapse;"><tr style="border:1px solid #000;"><th style="border:1px solid #000;padding:8px;">Nome</th><th style="border:1px solid #000;padding:8px;">Telefone</th><th style="border:1px solid #000;padding:8px;">Serviço</th><th style="border:1px solid #000;padding:8px;">Data</th><th style="border:1px solid #000;padding:8px;">Hora</th><th style="border:1px solid #000;padding:8px;">Status</th></tr>';
       appts.forEach(a => {
         const service = SERVICES.find(s=>s.id===a.service);
         const status = a.status === 'completed' ? 'Feito' : (a.status === 'cancelled' ? 'Cancelado' : 'Pendente');

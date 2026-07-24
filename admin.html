@@ -33,6 +33,7 @@
         <ul>
           <li><a href="index.html">Início</a></li>
           <li><a href="agendar.html">Agendar</a></li>
+          <li><a href="barbeiro.html">Barbeiro</a></li>
           <li><a href="admin.html" class="active">Admin</a></li>
           <li><a href="#" id="admin-logout">Sair</a></li>
         </ul>
@@ -49,6 +50,7 @@
       <button class="tab-btn" data-tab="appointments">📅 Agendamentos</button>
       <button class="tab-btn" data-tab="timeline">⏰ Timeline</button>
       <button class="tab-btn" data-tab="settings">⚙️ Configurações</button>
+      <button class="tab-btn" data-tab="users">👥 Usuários</button>
       <button class="tab-btn" data-tab="history">📝 Histórico</button>
       <span class="tab-notification" id="pending-badge">0</span>
     </div>
@@ -214,6 +216,42 @@
       </div>
       <ul id="history-list" class="history-list"></ul>
     </div>
+
+    <!-- TAB: USERS -->
+    <div id="users" class="tab-content">
+      <h2>Usuários</h2>
+      <section class="user-section">
+        <h3>Criar conta</h3>
+        <form id="user-form" class="user-form">
+          <label for="user-name">Nome completo</label>
+          <input type="text" id="user-name" placeholder="Nome do usuário" required>
+
+          <label for="user-login">Login</label>
+          <input type="text" id="user-login" placeholder="login@email.com" required>
+
+          <label for="user-password">Senha</label>
+          <input type="password" id="user-password" placeholder="Senha de acesso" required>
+
+          <label for="user-role">Função</label>
+          <select id="user-role" required>
+            <option value="barbeiro">Barbeiro</option>
+            <option value="admin">Admin</option>
+          </select>
+
+          <div id="user-status" class="status"></div>
+          <div class="form-actions">
+            <button type="submit" class="btn">Salvar usuário</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="user-list-section">
+        <div class="user-list-header">
+          <h3>Usuários cadastrados <span id="user-count">(0)</span></h3>
+        </div>
+        <ul id="barber-users-list" class="history-list"></ul>
+      </section>
+    </div>
   </main>
 
   <footer class="site-footer">
@@ -224,6 +262,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-  <script src="script-admin.js" defer></script>
+  <script src="script.js" defer></script>
 </body>
 </html>

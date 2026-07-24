@@ -18,6 +18,7 @@
   let currentFilter = {search: '', status: '', dateFrom: '', dateTo: ''};
   const ADMIN_PASSWORD = '1234';
   const ADMIN_AUTH_KEY = 'barberAdminAuthenticated';
+  const CURRENT_USER_KEY = 'currentBarberUser';
 
   function qs(sel){return document.querySelector(sel)}
   function qsa(sel){return document.querySelectorAll(sel)}
@@ -26,30 +27,56 @@
   function initAuth(){
     const modal = qs('#auth-modal');
     const content = qs('#admin-content');
+    const loginInput = qs('#admin-login');
     const passwordInput = qs('#admin-password');
-    const loginBtn = qs('#admin-login');
+    const loginBtn = qs('#admin-login-btn');
     const logoutBtn = qs('#admin-logout');
 
     function showAdmin(){
       if(modal) modal.style.display = 'none';
       if(content) content.style.display = 'block';
+      updateCurrentUserDisplay();
     }
 
     function showLogin(){
       if(modal) modal.style.display = 'flex';
       if(content) content.style.display = 'none';
-      passwordInput?.focus();
+      if(loginInput) loginInput.focus();
     }
 
     function login(){
-      if(passwordInput?.value === ADMIN_PASSWORD){
+      const login = loginInput?.value.trim().toLowerCase();
+      const password = passwordInput?.value;
+
+      if(!login || !password){
+        alert('Preencha login e senha.');
+        return;
+      }
+
+      // Verificar se é admin (senha padrão)
+      if(login === 'admin' && password === ADMIN_PASSWORD){
         sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
-        passwordInput.value = '';
+        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify({login: 'admin', name: 'Admin', role: 'admin'}));
+        if(loginInput) loginInput.value = '';
+        if(passwordInput) passwordInput.value = '';
+        showAdmin();
+        return;
+      }
+
+      // Verificar usuários cadastrados
+      const users = getBarberUsers();
+      const user = users.find(u => u.login === login && u.password === password);
+      
+      if(user){
+        sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
+        sessionStorage.setItem(CURRENT_USER_KEY, JSON.stringify({login: user.login, name: user.name, role: user.role}));
+        if(loginInput) loginInput.value = '';
+        if(passwordInput) passwordInput.value = '';
         showAdmin();
       } else {
-        alert('Senha incorreta.');
+        alert('Login ou senha incorretos.');
         if(passwordInput) passwordInput.value = '';
-        passwordInput?.focus();
+        if(loginInput) loginInput?.focus();
       }
     }
 
@@ -57,14 +84,33 @@
     else showLogin();
 
     loginBtn?.addEventListener('click', login);
+    loginInput?.addEventListener('keydown', (event)=>{
+      if(event.key === 'Enter') passwordInput?.focus();
+    });
     passwordInput?.addEventListener('keydown', (event)=>{
       if(event.key === 'Enter') login();
     });
     logoutBtn?.addEventListener('click', (event)=>{
       event.preventDefault();
       sessionStorage.removeItem(ADMIN_AUTH_KEY);
+      sessionStorage.removeItem(CURRENT_USER_KEY);
       showLogin();
     });
+  }
+
+  function updateCurrentUserDisplay(){
+    const userDisplay = qs('#current-user-display');
+    if(!userDisplay) return;
+    
+    const userStr = sessionStorage.getItem(CURRENT_USER_KEY);
+    if(userStr){
+      try{
+        const user = JSON.parse(userStr);
+        userDisplay.textContent = `Usuário: ${user.name} (${user.role === 'admin' ? 'Admin' : 'Barbeiro'})`;
+      } catch(e){
+        userDisplay.textContent = '';
+      }
+    }
   }
   
   // DARK MODE
@@ -130,7 +176,10 @@
   }
   function saveBarberUsers(arr){
     try{
-      localStorage.setItem('barberUsers',JSON.stringify(arr));
+      const result = localStorage.setItem('barberUsers',JSON.stringify(arr));
+      // Força sincronização
+      localStorage.getItem('barberUsers');
+      console.log('Usuários salvos:', arr);
       return true;
     }catch(e){
       console.error('Erro ao salvar usuários:', e);
@@ -737,6 +786,9 @@
         
         // Renderizar lista atualizada
         renderUsers();
+        
+        // Verificar dados salvos
+        console.log('Usuários após salvar:', getBarberUsers());
         
         // Limpar mensagem após 3 segundos
         setTimeout(()=>{
